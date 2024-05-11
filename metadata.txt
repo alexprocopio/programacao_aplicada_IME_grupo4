@@ -6,9 +6,9 @@
 name=ProgramacaoAplicadaGrupo5
 qgisMinimumVersion=3.22
 description=Solução do Grupo 5
-version=0.11
-author=Grupo X
-email=GrupoX@ime.eb.br
+version=0.2
+author=Grupo 5
+email=Grupo5@ime.eb.br
 
 about=Soluções dos projetos de programação aplicada do grupo 5
 
