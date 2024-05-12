@@ -20,10 +20,10 @@ from qgis.core import (QgsProcessing,
                        edit,
                        QgsRaster,
                        QgsFeatureRequest, QgsGeometry, QgsPoint)
-import processing
+from qgis import processing
 import numpy as np
 
-class Projeto2Solucao(QgsProcessingAlgorithm):
+class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
     # Declarando os nossos parâmetros que utilizaremos para a resolução da questão.
 
     OUTPUT = 'OUTPUT'
@@ -40,7 +40,7 @@ class Projeto2Solucao(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return Projeto2Solucao()
+        return Projeto2SolucaoComplementar()
 
     def name(self):
         """
@@ -50,21 +50,21 @@ class Projeto2Solucao(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'projeto2'
+        return 'Solução Complementar Projeto 2'
 
     def displayName(self):
         """
         Returns the translated algorithm name, which should be used for any
         user-visible display of the algorithm name.
         """
-        return self.tr('Projeto2')
+        return self.tr('Projeto 2')
 
     def group(self):
         """
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr('Example scripts')
+        return self.tr('Projeto 2')
 
     def groupId(self):
         """

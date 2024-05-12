@@ -57,7 +57,7 @@ class Projeto2Solucao(QgsProcessingAlgorithm):
         lowercase alphanumeric characters only and no spaces or other
         formatting characters.
         """
-        return 'projeto2'
+        return 'Solução Projeto 2'
 
     def displayName(self):
         """
@@ -71,7 +71,7 @@ class Projeto2Solucao(QgsProcessingAlgorithm):
         Returns the name of the group this algorithm belongs to. This string
         should be localised.
         """
-        return self.tr('Example scripts')
+        return self.tr('Projeto 2')
 
     def groupId(self):
         """
