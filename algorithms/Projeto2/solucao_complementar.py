@@ -20,20 +20,14 @@ from qgis.core import (QgsProcessing,
                        edit,
                        QgsRaster,
                        QgsFeatureRequest, QgsGeometry, QgsPoint)
+import processing
 import numpy as np
 
-
-class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
+class Projeto2Solucao(QgsProcessingAlgorithm):
     # Declarando os nossos parâmetros que utilizaremos para a resolução da questão.
 
     OUTPUT = 'OUTPUT'
-    OUTPUT1 = 'OUTPUT1'
-    OUTPUT2 = 'OUTPUT2'
-    OUTPUT3 = 'OUTPUT3'
-    OUTPUT4 = 'OUTPUT4'
     PONTOS_PISTA = 'Pistas de Pouso Pontos'
-    LINHAS_PISTA = 'Pistas de Pouso Linhas'
-    AREAS_PISTA = 'Pistas de Pouso Areas'
     INPUT = 'INPUT'
     ESCALA = 'ESCALA'
     MOLDURA = 'MOLDURA'
@@ -46,7 +40,7 @@ class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return Projeto2SolucaoComplementar()
+        return Projeto2Solucao()
 
     def name(self):
         """
@@ -104,22 +98,13 @@ class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeRaster]
             )
         )
+        #entrada pontos
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                self.OUTPUT1,
+                self.tr('Altitude Pontos output')
+            )
 
-        # Camada vetorial ponto de pistas de pouso
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.PONTOS_PISTA,
-                self.tr('Pistas de Pouso Pontos'),
-                [QgsProcessing.TypeVectorPoint]
-            )
-        )
-        # Camada vetorial linha de pistas de pouso
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.LINHAS_PISTA,
-                self.tr('Pistas de Pouso Linhas'),
-                [QgsProcessing.TypeVectorLine]
-            )
         )
         # Camada vetorial linha de cuva de nivel
         self.addParameter(
@@ -129,14 +114,7 @@ class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorLine]
             )
         )
-        # Camada vetorial Área de pistas de pouso
-        self.addParameter(
-            QgsProcessingParameterFeatureSource(
-                self.AREAS_PISTA,
-                self.tr('Pistas de Pouso Areas'),
-                [QgsProcessing.TypeVectorAnyGeometry]
-            )
-        )
+
 
         # Adicionando o parâmetro de escala
         options = ['1:25.000', '1:50.000', '1:100.000', '1:250.000']
@@ -160,219 +138,119 @@ class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
-                self.tr('Curvas de nivel output')
+                self.tr('Pontos máximos')
             ))
-        # Adicionando o parâmetro de saída (OUTPUT1)
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT1,
-                self.tr('Altitude Pontos output')
-            )
 
-        )
-        # Adicionando o parâmetro de saída (OUTPUT2)
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT2,
-                self.tr('Altitude Linhas output')
-            )
+        def processAlgorithm(self, parameters, context, feedback):
+            """
+            Aqui será feita o processamento do algoritmo.
+            """
 
-        )
-        # Adicionando o parâmetro de saída (OUTPUT3)
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT3,
-                self.tr('Altitude Áreas Linhas output')
-            )
-
-        )
-        self.addParameter(
-            QgsProcessingParameterFeatureSink(
-                self.OUTPUT4,
-                self.tr('Pontos Cotados')
-            )
-
-        )
-
-    def processAlgorithm(self, parameters, context, feedback):
-        """
-        Aqui será feita o processamento do algoritmo.
-        """
-
-        # Alocando na variável escala a escala escolhida pelo usuário
-        escala_index = self.parameterAsEnum(parameters, self.ESCALA, context)
-        escala_equidistancia = {
-            '0': 10,
-            '1': 20,
-            '2': 50,
-            '3': 100}
-        equidistancia = escala_equidistancia[str(escala_index)]
-        equidistancia_mestre = 5 * equidistancia
-        curvas_layer = self.parameterAsVectorLayer(parameters, self.CURVAS, context)
-        mdt_layer = self.parameterAsRasterLayer(parameters, self.INPUT, context)
-        pontos_layer = self.parameterAsVectorLayer(parameters, self.PONTOS_PISTA, context)
-        linhas_layer = self.parameterAsVectorLayer(parameters, self.LINHAS_PISTA, context)
-        areas_layer = self.parameterAsVectorLayer(parameters, self.AREAS_PISTA, context)
-        moldura_layer = self.parameterAsVectorLayer(parameters, self.MOLDURA, context)
-
-        # Alocando a camada de saída na variável sink
-        (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
-                                               context, curvas_layer.fields(), curvas_layer.wkbType(),
-                                               curvas_layer.sourceCrs())
-        (sink2, dest_id2) = self.parameterAsSink(parameters, self.OUTPUT1,
+            # Alocando na variável escala a escala escolhida pelo usuário
+            escala_index = self.parameterAsEnum(parameters, self.ESCALA, context)
+            escala_equidistancia = {
+                '0': 10,
+                '1': 20,
+                '2': 50,
+                '3': 100}
+            equidistancia = escala_equidistancia[str(escala_index)]
+            equidistancia_mestre = 5 * equidistancia
+            curvas_layer = self.parameterAsVectorLayer(parameters, self.CURVAS, context)
+            mdt_layer = self.parameterAsRasterLayer(parameters, self.INPUT, context)
+            moldura_layer = self.parameterAsVectorLayer(parameters, self.MOLDURA, context)
+            pontos_layer = self.parameterAsVectorLayer(parameters, self.PONTOS_PISTA, context)
+            (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT4,
                                                  context, pontos_layer.fields(), pontos_layer.wkbType(),
                                                  pontos_layer.sourceCrs())
-        (sink3, dest_id3) = self.parameterAsSink(parameters, self.OUTPUT2,
-                                                 context, linhas_layer.fields(), linhas_layer.wkbType(),
-                                                 linhas_layer.sourceCrs())
-        (sink4, dest_id4) = self.parameterAsSink(parameters, self.OUTPUT3,
-                                                 context, areas_layer.fields(), areas_layer.wkbType(),
-                                                 areas_layer.sourceCrs())
-        (sink5, dest_id5) = self.parameterAsSink(parameters, self.OUTPUT4,
-                                                 context, pontos_layer.fields(), pontos_layer.wkbType(),
-                                                 pontos_layer.sourceCrs())
+            multiStepFeedback = QgsProcessingMultiStepFeedback(2, feedback)
+            multiStepFeedback.setCurrentStep(0)
+            multiStepFeedback.setProgressText(self.tr("Verificando estrtutura"))
 
-        # Adicionando o multistepfeedback para poder mostrar na tela o carregamento
-        multiStepFeedback = QgsProcessingMultiStepFeedback(6, feedback)
-        multiStepFeedback.setCurrentStep(0)
-        multiStepFeedback.setProgressText(self.tr("Verificando estrtutura"))
+            # Execute o algoritmo
+            poligono_moldura = None
+            for feature in moldura_layer.getFeatures():
+                poligono_moldura = feature.geometry()
+                break
+            multiStepFeedback.setCurrentStep(5)
+            pontos_processados = set()
+            lista = []
 
-        for feature in curvas_layer.getFeatures():
-            cota = feature['cota']
-            if cota % equidistancia == 0 and cota % equidistancia_mestre != 0:
-                feature['indice'] = 2
-                # Adicione a feature à camada de saída
-                sink.addFeature(feature)
-                # Atualize o valor do atributo "índice" para 0
-            elif cota % equidistancia_mestre == 0:
-                # Adicione a feature à camada de saída
-                feature['indice'] = 1
-                sink.addFeature(feature)
-        multiStepFeedback.setCurrentStep(1)
-        for feature in pontos_layer.getFeatures():
-            ponto = feature.geometry().asPoint()
-            value = mdt_layer.dataProvider().identify(ponto, QgsRaster.IdentifyFormatValue).results()[1]
-            value = round(value, 1)
-            feature['altitude'] = value
-            sink2.addFeature(feature)
-        multiStepFeedback.setCurrentStep(3)
-        for feature in linhas_layer.getFeatures():
-            geometry = feature.geometry()
-            total_length = geometry.length()
-            mid_point = geometry.interpolate(total_length / 2.0)
-            mid_point = mid_point.asPoint()
-            value = mdt_layer.dataProvider().identify(mid_point, QgsRaster.IdentifyFormatValue).results()[1]
-            value = round(value, 1)
-            feature['altitude'] = value
-            sink3.addFeature(feature)
-        multiStepFeedback.setCurrentStep(4)
-        for feature in areas_layer.getFeatures():
-            geometry = feature.geometry()
-            centroid = geometry.centroid()
-            centroid = centroid.asPoint()
-            value = mdt_layer.dataProvider().identify(centroid, QgsRaster.IdentifyFormatValue).results()[1]
-            value = round(value, 1)
-            feature['altitude'] = value
-            sink4.addFeature(feature)
-        alg_params = {
-            'INPUT': curvas_layer,
-            'OUTPUT': 'TEMPORARY_OUTPUT'
-        }
+            def ring(geom_multilinestring):
+                """
+                Cria um anel fechado a partir de uma geometria MultiLineString.
 
-        # Execute o algoritmo
-        poligono_moldura = None
-        for feature in moldura_layer.getFeatures():
-            poligono_moldura = feature.geometry()
-            break
-        multiStepFeedback.setCurrentStep(5)
-        pontos_processados = set()
-        lista = []
+                :param geom_multilinestring: QgsGeometry representando uma MultiLineString.
+                :return: QgsGeometry representando um anel fechado.
+                """
+                # Inicializa uma lista de pontos para formar o anel
+                ring_points = []
 
-        def ring(geom_multilinestring):
-            """
-            Cria um anel fechado a partir de uma geometria MultiLineString.
+                # Itera sobre todas as partes das linhas contidas na geometria MultiLineString
+                for part in geom_multilinestring.parts():
+                    # Adiciona todos os pontos da parte atual à lista de pontos do anel
+                    ring_points.extend(part)
 
-            :param geom_multilinestring: QgsGeometry representando uma MultiLineString.
-            :return: QgsGeometry representando um anel fechado.
-            """
-            # Inicializa uma lista de pontos para formar o anel
-            ring_points = []
+                # Adiciona o primeiro ponto ao final da lista para fechar o anel
+                ring_points.append(ring_points[0])
+                ring_points = [QgsPointXY(point) for point in ring_points]
+                # Cria um QgsGeometry a partir dos pontos do anel e retorna
+                return QgsGeometry.fromPolygonXY([[point for point in ring_points]])
 
-            # Itera sobre todas as partes das linhas contidas na geometria MultiLineString
-            for part in geom_multilinestring.parts():
-                # Adiciona todos os pontos da parte atual à lista de pontos do anel
-                ring_points.extend(part)
+            def max_raster_value(raster_layer, ring_geometry):
+                """
+                Calcula o valor máximo do raster para todos os pontos contidos dentro do anel de geometria.
 
-            # Adiciona o primeiro ponto ao final da lista para fechar o anel
-            ring_points.append(ring_points[0])
-            ring_points = [QgsPointXY(point) for point in ring_points]
-            # Cria um QgsGeometry a partir dos pontos do anel e retorna
-            return QgsGeometry.fromPolygonXY([[point for point in ring_points]])
+                :param raster_layer: QgsRasterLayer representando a camada raster.
+                :param ring_geometry: QgsGeometry representando o anel.
+                :return: Valor máximo do raster dentro do anel.
+                """
+                # Inicializa o valor máximo como negativo infinito
+                max_value = float("-inf")
 
-        def max_raster_value(raster_layer, ring_geometry):
-            """
-            Calcula o valor máximo do raster para todos os pontos contidos dentro do anel de geometria.
+                # Obtém todos os pontos dentro do anel
+                points_within_ring = [point for point in ring_geometry.asPolygon()[0]]
+                count = 0
+                # Itera sobre os pontos dentro do anel
+                for point in points_within_ring:
+                    # Identifica o valor do raster no ponto
 
-            :param raster_layer: QgsRasterLayer representando a camada raster.
-            :param ring_geometry: QgsGeometry representando o anel.
-            :return: Valor máximo do raster dentro do anel.
-            """
-            # Inicializa o valor máximo como negativo infinito
-            max_value = float("-inf")
+                    value = raster_layer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results()[1]
+                    # Atualiza o valor máximo, se necessário
+                    if value is not None and value > max_value:
+                        max_value = value
+                        max_value_point = point
+                    if point is None:
+                        max_value = 0
 
-            # Obtém todos os pontos dentro do anel
-            points_within_ring = [point for point in ring_geometry.asPolygon()[0]]
-            count = 0
-            # Itera sobre os pontos dentro do anel
-            for point in points_within_ring:
-                # Identifica o valor do raster no ponto
+                return max_value, max_value_point
 
-                #value = raster_layer.dataProvider().identify(point, QgsRaster.IdentifyFormatValue).results()[1]
-                count +=1
-                value = count
-                # Atualiza o valor máximo, se necessário
-                if value > max_value:
-                    max_value = value
-                    max_value_point = point
+            for feature in curvas_layer.getFeatures():
+                if poligono_moldura.contains(feature.geometry()):
+                    geometria = feature.geometry()
+                    anel = ring(geometria)
+                    valor, ponto = max_raster_value(mdt_layer, anel)
+                    if ponto:
+                        if ponto not in pontos_processados:
+                            lista.append((ponto, valor))
+                            # Adicionar o ponto ao conjunto de pontos processados
+                            pontos_processados.add(ponto)
+            multiStepFeedback.setCurrentStep(1)
+            for i in range(len(lista)):
+                point, value = lista[i]
+                # Criar uma nova feature
+                nova_feature = QgsFeature()
 
-            return max_value,max_value_point
-        for feature in curvas_layer.getFeatures():
-            if poligono_moldura.contains(feature.geometry()):
-                geometria = feature.geometry()
-                anel = ring(geometria)
-                valor,ponto = max_raster_value(mdt_layer,anel)
-                if ponto:
-                    if ponto not in pontos_processados:
-                        lista.append((ponto, valor))
-                        # Adicionar o ponto ao conjunto de pontos processados
-                        pontos_processados.add(ponto)
-        for i in range(len(lista)):
-            point, value = lista[i]
-            # Criar uma nova feature
-            nova_feature = QgsFeature()
+                # Definir a geometria da nova feature
+                nova_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(point)))
 
-            # Definir a geometria da nova feature
-            nova_feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(point)))
+                # Criar uma lista de atributos preenchidos com None, exceto o último atributo (altitude)
+                atributos = [None] * 6 + [value]  # 6 representa os primeiros 6 atributos e o último é altitude
 
-            # Criar uma lista de atributos preenchidos com None, exceto o último atributo (altitude)
-            atributos = [None] * 6 + [value]  # 6 representa os primeiros 6 atributos e o último é altitude
+                # Definir os atributos da nova feature
+                nova_feature.setAttributes(atributos)
 
-            # Definir os atributos da nova feature
-            nova_feature.setAttributes(atributos)
-
-            # Adicionar a nova feature ao sink5
-            sink5.addFeature(nova_feature)
-
-        multiStepFeedback.setCurrentStep(6)
-
-        # Armazenando para que se consiga mudar o estilo da camada de saída, temos:
-        self.dest_id = dest_id
-        self.dest_id2 = dest_id2
-        self.dest_id3 = dest_id3
-        self.dest_id4 = dest_id4
-        self.dest_id5 = dest_id5
-
-        # Retornando a saída das feições de resultado
-        return {self.OUTPUT: dest_id, self.OUTPUT1: dest_id2, self.OUTPUT2: dest_id3, self.OUTPUT3: dest_id4,
-                self.OUTPUT4: dest_id5}
-
+                # Adicionar a nova feature ao sink5
+                sink.addFeature(nova_feature)
+            multiStepFeedback.setCurrentStep(2)
+            self.dest_id = dest_id
+            return {self.OUTPUT: dest_id}
