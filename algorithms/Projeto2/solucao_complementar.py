@@ -20,11 +20,10 @@ from qgis.core import (QgsProcessing,
                        edit,
                        QgsRaster,
                        QgsFeatureRequest, QgsGeometry, QgsPoint)
-import processing
 import numpy as np
 
 
-class Projeto2Solucao(QgsProcessingAlgorithm):
+class Projeto2SolucaoComplementar(QgsProcessingAlgorithm):
     # Declarando os nossos parâmetros que utilizaremos para a resolução da questão.
 
     OUTPUT = 'OUTPUT'
@@ -47,7 +46,7 @@ class Projeto2Solucao(QgsProcessingAlgorithm):
         return QCoreApplication.translate('Processing', string)
 
     def createInstance(self):
-        return Projeto2Solucao()
+        return Projeto2SolucaoComplementar()
 
     def name(self):
         """
