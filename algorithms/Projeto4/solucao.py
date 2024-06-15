@@ -1,38 +1,43 @@
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
-from qgis.core import (QgsProcessing,
-                       QgsFeatureSink,
-                       QgsWkbTypes,
-                       QgsPointXY,
-                       QgsProcessingMultiStepFeedback,
-                       QgsField,
-                       QgsProcessingParameterNumber,
-                       QgsSpatialIndex,
-                       QgsProcessingUtils,
-                       QgsProcessingParameterEnum,
-                       QgsFeature,
-                       QgsProcessingException,
-                       QgsProcessingAlgorithm,
-                       QgsGeometry,
-                       QgsFields,
-                       QgsProcessingParameterFeatureSource,
-                       QgsProcessingParameterFeatureSink,
-                       QgsProcessingParameterRasterLayer,
-                       edit,
-                       QgsRaster,
-                       QgsFeatureRequest)
+from qgis.core import (
+    QgsProcessing,
+    QgsFeatureSink,
+    QgsWkbTypes,
+    QgsPointXY,
+    QgsProcessingMultiStepFeedback,
+    QgsField,
+    QgsProcessingParameterNumber,
+    QgsSpatialIndex,
+    QgsProcessingUtils,
+    QgsProcessingParameterEnum,
+    QgsFeature,
+    QgsProcessingException,
+    QgsProcessingAlgorithm,
+    QgsGeometry,
+    QgsFields,
+    QgsProcessingParameterFeatureSource,
+    QgsProcessingParameterFeatureSink,
+    QgsProcessingParameterRasterLayer,
+    edit,
+    QgsRaster,
+    QgsFeatureRequest
+)
 import processing
-
-
 
 class Projeto4Solucao(QgsProcessingAlgorithm):
     # Declarando os nossos parâmetros que utilizaremos para a resolução da questão.
-
+    INPUT = 'INPUT'
+    PONTOS_PISTA = 'PONTOS_PISTA'
+    LINHAS_PISTA = 'LINHAS_PISTA'
+    CURVAS = 'CURVAS'
+    AREAS_PISTA = 'AREAS_PISTA'
+    ESCALA = 'ESCALA'
+    MOLDURA = 'MOLDURA'
     OUTPUT = 'OUTPUT'
-    INPUT1 = 'INPUT1'
-    INPUT2 = 'INPUT2'
-    INPUT3 = 'INPUT3'
-    # INPUT4 = 'INPUT4'
-    # INPUT5 = 'INPUT5'
+    OUTPUT1 = 'OUTPUT1'
+    OUTPUT2 = 'OUTPUT2'
+    OUTPUT3 = 'OUTPUT3'
+    OUTPUT4 = 'OUTPUT4'
 
     def tr(self, string):
         """
@@ -44,54 +49,21 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
         return Projeto4Solucao()
 
     def name(self):
-        """
-        Returns the algorithm name, used for identifying the algorithm. This
-        string should be fixed for the algorithm, and must not be localised.
-        The name should be unique within each provider. Names should contain
-        lowercase alphanumeric characters only and no spaces or other
-        formatting characters.
-        """
-        return 'Solução Projeto 4'
+        return 'solucao_projeto4'
 
     def displayName(self):
-        """
-        Returns the translated algorithm name, which should be used for any
-        user-visible display of the algorithm name.
-        """
-        return self.tr('Projeto4')
+        return self.tr('Solução Projeto 4')
 
     def group(self):
-        """
-        Returns the name of the group this algorithm belongs to. This string
-        should be localised.
-        """
         return self.tr('Projeto 4')
 
     def groupId(self):
-        """
-        Returns the unique ID of the group this algorithm belongs to. This
-        string should be fixed for the algorithm, and must not be localised.
-        The group id should be unique within each provider. Group id should
-        contain lowercase alphanumeric characters only and no spaces or other
-        formatting characters.
-        """
-        return 'Projeto4'
+        return 'projeto4'
 
     def shortHelpString(self):
-        """
-        Returns a localised short helper string for the algorithm. This string
-        should provide a basic description about what the algorithm does and the
-        parameters and outputs associated with it..
-        """
         return self.tr("Funciona por favor")
 
     def initAlgorithm(self, config=None):
-        """
-        Here we define the inputs and output of the algorithm, along
-        with some other properties.
-        """
-
-        # Camada MDT de entrada
         self.addParameter(
             QgsProcessingParameterRasterLayer(
                 self.INPUT,
@@ -99,8 +71,6 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeRaster]
             )
         )
-
-        # Camada vetorial ponto de pistas de pouso
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.PONTOS_PISTA,
@@ -108,7 +78,6 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorPoint]
             )
         )
-        # Camada vetorial linha de pistas de pouso
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.LINHAS_PISTA,
@@ -116,7 +85,6 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorLine]
             )
         )
-        # Camada vetorial linha de cuva de nivel
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.CURVAS,
@@ -124,7 +92,6 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorLine]
             )
         )
-        # Camada vetorial Área de pistas de pouso
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.AREAS_PISTA,
@@ -132,18 +99,15 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorAnyGeometry]
             )
         )
-
-        # Adicionando o parâmetro de escala
         options = ['1:25.000', '1:50.000', '1:100.000', '1:250.000']
         self.addParameter(
             QgsProcessingParameterEnum(
                 self.ESCALA,
                 self.tr('Escala'),
                 options,
-                defaultValue=options[0]  # Valor padrão
+                defaultValue=options[0]
             )
         )
-        # Adicionando camada vetorial área para moldura
         self.addParameter(
             QgsProcessingParameterFeatureSource(
                 self.MOLDURA,
@@ -151,56 +115,72 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 [QgsProcessing.TypeVectorAnyGeometry]
             )
         )
-        # Adicionando o parâmetro de saída (OUTPUT)
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT,
                 self.tr('Curvas de nivel output')
-            ))
-        # Adicionando o parâmetro de saída (OUTPUT1)
+            )
+        )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT1,
                 self.tr('Altitude Pontos output')
             )
-
         )
-        # Adicionando o parâmetro de saída (OUTPUT2)
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT2,
                 self.tr('Altitude Linhas output')
             )
-
         )
-        # Adicionando o parâmetro de saída (OUTPUT3)
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT3,
                 self.tr('Altitude Áreas Linhas output')
             )
-
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 self.OUTPUT4,
                 self.tr('Pontos Cotados')
             )
-
         )
 
     def processAlgorithm(self, parameters, context, feedback):
-        """
-        Aqui será feita o processamento do algoritmo.
-        """
-
-        # Alocando na variável escala a escala escolhida pelo usuário
         escala_index = self.parameterAsEnum(parameters, self.ESCALA, context)
         escala_equidistancia = {
             '0': 10,
             '1': 20,
             '2': 50,
-            '3': 100}
+            '3': 100
+        }
+        equidistancia = escala_equidistancia[str(escala_index)]
+        
+        mdt_layer = self.parameterAsRasterLayer(parameters, self.INPUT, context)
+        pontos_layer = self.parameterAsSource(parameters, self.PONTOS_PISTA, context)
+        linhas_layer = self.parameterAsSource(parameters, self.LINHAS_PISTA, context)
+        curvas_layer = self.parameterAsSource(parameters, self.CURVAS, context)
+        areas_layer = self.parameterAsSource(parameters, self.AREAS_PISTA, context)
+        moldura_layer = self.parameterAsSource(parameters, self.MOLDURA, context)
+
+        # Conferência dos atributos
+        self.conferirAtributos(pontos_layer, feedback)
+        self.conferirAtributos(linhas_layer, feedback)
+        self.conferirAtributos(curvas_layer, feedback)
+        self.conferirAtributos(areas_layer, feedback)
+        self.conferirAtributos(moldura_layer, feedback)
+
+        return {}
+
+    def conferirAtributos(self, layer, feedback):
+        if not layer:
+            feedback.reportError("Camada não encontrada")
+            return
+        for feature in layer.getFeatures():
+            attrs = feature.attributes()
+            feedback.pushInfo(f"Atributos da feição {feature.id()}: {attrs}")
+
+
         equidistancia = escala_equidistancia[str(escala_index)]
         equidistancia_mestre = 5 * equidistancia
         curvas_layer = self.parameterAsVectorLayer(parameters, self.CURVAS, context)
