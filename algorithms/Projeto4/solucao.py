@@ -23,6 +23,7 @@ from qgis.core import (
     QgsFeatureRequest
 )
 import processing
+from collections import defaultdict
 
 
 class Projeto4Solucao(QgsProcessingAlgorithm):
@@ -104,12 +105,12 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
             )
 
     def processAlgorithm(self, parameters, context, feedback):
-        drenagem = self.parameterAsSource(parameters, self.DRENAGEM, context)
-        viario = self.parameterAsSource(parameters, self.VIARIO, context)
-        deslocamento = self.parameterAsSource(parameters, self.DESLOCAMENTO, context)
+        drenagem = self.parameterAsVectorLayer(parameters, self.DRENAGEM, context)
+        viario = self.parameterAsVectorLayer(parameters, self.VIARIO, context)
+        deslocamento = self.parameterAsVectorLayer(parameters, self.DESLOCAMENTO, context)
 
         new_fields = QgsFields()
-        new_field = QgsField("regra", QVariant.Int)
+        new_field = QgsField('Tipo de Erro', QVariant.String)
         new_fields.append(new_field)
 
         (sink, dest_id) = self.parameterAsSink(parameters, self.OUTPUT,
@@ -121,42 +122,39 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
         multiStepFeedback.setProgressText(self.tr("Verificando estrtutura"))
 
         for feature in viario.getFeatures():
-            if feature['situacao_fisica']:
+            if feature['situacao_fisica'] != '3':
                 new_feature = QgsFeature()
                 new_feature.setGeometry(feature.geometry())
-
-                new_feature.setAttributes([1])
-
+                new_feature.setAttributes(['Regra 1: Situação Física'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
+
             if feature['tipo'] == 401 and  feature['material_construcao'] != 97:
                 new_feature = QgsFeature()
                 new_feature.setGeometry(feature.geometry())
-
-                new_feature.setAttributes([1])
-
+                new_feature.setAttributes(['Regra 1: Material - Vau Natural'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
+
         multiStepFeedback.setCurrentStep(1)
         for feature in deslocamento.getFeatures():
-            if feature['situacao_fisica']:
+            if feature['situacao_fisica'] != '3':
                 new_feature = QgsFeature()
                 new_feature.setGeometry(feature.geometry())
-
-                new_feature.setAttributes([1])
-
+                new_feature.setAttributes(['Regra 1: Situação Física'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
+
             if feature['nr_pistas'] > feature['nr_faixas']:
                 new_feature = QgsFeature()
                 new_feature.setGeometry(feature.geometry())
-
-                new_feature.setAttributes([1])
-
+                new_feature.setAttributes(['Regra 1: Número de Pistas e Faixas'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
+
         multiStepFeedback.setCurrentStep(2)
+
         intersect = processing.run("native:lineintersections", {
             'INPUT': drenagem,
             'INTERSECT': deslocamento,
             'INPUT_FIELDS': [], 'INTERSECT_FIELDS': [], 'INTERSECT_FIELDS_PREFIX': '', 'OUTPUT': 'TEMPORARY_OUTPUT'})
-        dic_int = {}
+        dic_int =  defaultdict(int)
         for feature in intersect['OUTPUT'].getFeatures():
             dic_int[(feature['id'],feature['id_2'])] +=1
             #Regra 3
@@ -165,7 +163,7 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                     if feature1['tipo'] not in [501, 201, 203, 202,204, 402, 401]:
                         new_feature = QgsFeature()
                         new_feature.setGeometry(feature.geometry)
-                        new_feature.setAttributes([3])
+                        new_feature.setAttributes(['Regra 3: Interseção Via Deslocamento e Drenagem (Quantidade)'])
                         sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
                         break
 
@@ -180,7 +178,7 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
 
                         new_feature = QgsFeature()
                         new_feature.setGeometry(midpoint)
-                        new_feature.setAttributes([2])
+                        new_feature.setAttributes(['Regra 2: Interseção Via Deslocamento e Drenagem (Ponte, Galeria/Bueiro e Vau)'])
                         sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
 
 
@@ -188,7 +186,7 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
         multiStepFeedback.setCurrentStep(3)
         # regra 4
         for feature in viario.getFeatures():
-            if feature['model_uso'] == 4 and feature['tipo'] in [501, 201, 203, 202,204, 402, 401]:
+            if feature['modal_uso'] == 4 and feature['tipo'] in [501, 201, 203, 202,204, 402, 401]:
                 r = 0
                 for feature1 in intersect['OUTPUT'].getFeatures():
                     if feature.geometry().intersects(feature1.geometry()):
@@ -197,7 +195,7 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 if r>0:
                     new_feature = QgsFeature()
                     new_feature.setGeometry(feature.geometry())
-                    new_feature.setAttributes([4])
+                    new_feature.setAttributes(['Regra 4: Ponte, Galeria/Bueiro e Vau Rodoviário ñ contido em Interseção (Deslocamento e Drenagem)'])
                     sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
 
         multiStepFeedback.setCurrentStep(4)
@@ -215,7 +213,7 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                                     bridge_feature['situacao_fisica'] != via_feature['situacao_fisica']:
                                 new_feature = QgsFeature()
                                 new_feature.setGeometry(bridge_geom)
-                                new_feature.setAttributes([5])
+                                new_feature.setAttributes(['Regra 5: Ponte de modal Rodoviário coincidindo com Vértice de uma Via'])
                                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
                             break
                     if coinciding:
@@ -223,12 +221,13 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
                 if not coinciding:
                     new_feature = QgsFeature()
                     new_feature.setGeometry(bridge_geom)
-                    new_feature.setAttributes([5])
+                    new_feature.setAttributes(['Regra 5: Ponte de modal Rodoviário coincidindo com Vértice de uma Via'])
                     sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
         multiStepFeedback.setCurrentStep(5)
+
+
         # Armazenando para que se consiga mudar o estilo da camada de saída, temos:
         self.dest_id = dest_id
-
 
         # Retornando a saída das feições de resultado
         return {self.OUTPUT: dest_id}
