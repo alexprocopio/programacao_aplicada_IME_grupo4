@@ -136,15 +136,21 @@ class Projeto4Solucao(QgsProcessingAlgorithm):
 
         multiStepFeedback.setCurrentStep(1)
         for feature in deslocamento.getFeatures():
-            if feature['situacao_fisica'] != '3':
+            if feature['situacao_fisica'] != 3:
+                line_geom = feature.geometry()
+                length = line_geom.length()
+                midpoint = line_geom.interpolate(length / 2)
                 new_feature = QgsFeature()
-                new_feature.setGeometry(feature.geometry())
+                new_feature.setGeometry(midpoint)
                 new_feature.setAttributes(['Regra 1: Situação Física'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
 
             if feature['nr_pistas'] > feature['nr_faixas']:
+                line_geom = feature.geometry()
+                length = line_geom.length()
+                midpoint = line_geom.interpolate(length / 2)
                 new_feature = QgsFeature()
-                new_feature.setGeometry(feature.geometry())
+                new_feature.setGeometry(midpoint)
                 new_feature.setAttributes(['Regra 1: Número de Pistas e Faixas'])
                 sink.addFeature(new_feature, QgsFeatureSink.FastInsert)
 
